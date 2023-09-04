@@ -32,8 +32,30 @@ const patientSchema = new mongoose.Schema(
       enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
       default: null, // You can set a default value if needed
     },
+    height: Number, // New field for Height
+    weight: Number, // New field for Weight
     notes: String,
+    prescriptionHistory: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Prescription",
+      },
+    ],
+    // Case Study Fields
+    foodAllergy: String,
+    heartDisease: String,
+    highBloodPressure: Boolean,
+    diabetic: Boolean,
+    surgery: Boolean,
+    accident: Boolean,
+    otherConditions: String,
+    familyMedicalHistory: String,
+    currentMedication: String,
+    pregnancy: Boolean,
+    breastfeeding: Boolean,
+    healthInsurance: Boolean,
   },
+
   {
     timestamps: true, // Adds createdAt and updatedAt timestamps
   }

@@ -43,4 +43,4 @@ const prescriptionSchema = new mongoose.Schema(
 );
 
 const Prescription = mongoose.model("Prescription", prescriptionSchema);
-module.exports = { Prescription}
+module.exports = { Prescription };
