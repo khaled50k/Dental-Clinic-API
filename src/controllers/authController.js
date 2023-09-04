@@ -63,10 +63,19 @@ exports.login = async (req, res) => {
     if (!isPasswordMatch) {
       return res.status(401).json({ error: "Invalid password." });
     }
-
+    const userWithoutSensitiveData = {
+      _id: dentist._id,
+      firstName: dentist.firstName,
+      lastName: dentist.lastName,
+      specialization: dentist.specialization,
+      contactNumber: dentist.contactNumber,
+      email: dentist.email,
+      username: dentist.username,
+      // Add any other non-sensitive fields here
+    };
     // Set the session
     req.session.authenticated = true;
-    req.session.user = dentist;
+    req.session.user = userWithoutSensitiveData;
 
     // Set the response
     res.status(200).json({ message: "Login successful." });
