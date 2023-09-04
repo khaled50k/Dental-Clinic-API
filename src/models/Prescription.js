@@ -17,9 +17,6 @@ const prescriptionSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-    weight: Number,
-    height: Number,
-    bloodPressure: String,
     chiefComplaint: String,
     medicines: [
       {

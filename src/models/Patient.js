@@ -54,8 +54,12 @@ const patientSchema = new mongoose.Schema(
     pregnancy: Boolean,
     breastfeeding: Boolean,
     healthInsurance: Boolean,
+    status: {
+      type: String,
+      enum: ["Active", "Inactive", "Suspended"],
+      default: "Active",
+    },
   },
-
   {
     timestamps: true, // Adds createdAt and updatedAt timestamps
   }
