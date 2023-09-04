@@ -44,4 +44,4 @@ appointmentSchema.index(
 );
 
 const Appointment = mongoose.model("Appointment", appointmentSchema);
-module.exports = { Appointment };
+module.exports = Appointment;

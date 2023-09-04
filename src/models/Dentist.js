@@ -4,16 +4,12 @@ const bcrypt = require("bcrypt");
 // Define the Dentist Schema
 const dentistSchema = new mongoose.Schema(
   {
-    firstName: {
-      type: String,
-      required: true,
-    },
-    lastName: {
+    name: {
       type: String,
       required: true,
     },
     specialization: String,
-    contactNumber: {
+    phoneNumber: {
       type: String,
       required: true,
     },
@@ -53,4 +49,4 @@ dentistSchema.pre("save", async function (next) {
 });
 
 const Dentist = mongoose.model("Dentist", dentistSchema);
-module.exports = { Dentist };
+module.exports = Dentist;
