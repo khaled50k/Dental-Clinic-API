@@ -1,5 +1,9 @@
 const bcrypt = require("bcrypt");
 const Dentist = require("../models/Dentist"); // Assuming you have a Dentist model
+const {
+  registrationSchema,
+  loginSchema,
+} = require("../validation/authValidation");
 
 exports.register = async (req, res) => {
   try {
@@ -7,7 +11,18 @@ exports.register = async (req, res) => {
       req.body;
 
     // Validate the input data
+    const { error } = registrationSchema.validate({
+      name,
+      specialization,
+      phoneNumber,
+      email,
+      username,
+      password,
+    });
 
+    if (error) {
+      return res.status(400).json({ errors: error.details });
+    }
     // Check if the email address is already taken
 
     const dentistExists = await Dentist.findOne({ email });
@@ -17,8 +32,6 @@ exports.register = async (req, res) => {
         .status(400)
         .json({ error: "This email address is already taken." });
     }
-
-    // Hash the password
 
     // Create a new dentist document
     const dentist = new Dentist({
@@ -51,11 +64,16 @@ exports.login = async (req, res) => {
         .status(400)
         .json({ error: "Please provide all required information." });
     }
+    const { error } = loginSchema.validate({ username, password });
+    console.log(username);
+    if (error) {
+      return res.status(400).json({ errors: error.details });
+    }
 
     // Find the dentist by email address
     const dentist = await Dentist.findOne({ username: username });
     if (!dentist) {
-      return res.status(404).json({ error: "Dentist not found." });
+      return res.status(404).json({ errors: "Dentist not found." });
     }
 
     // Compare the password with the hashed password in the database
