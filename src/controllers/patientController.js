@@ -95,9 +95,7 @@ exports.deletePatient = async (req, res) => {
       return res.status(404).json({ error: "Patient not found." });
     }
 
-    res
-      .status(200)
-      .json({ message: "Patient deleted successfully.", deletedPatient });
+    res.status(200).json({ message: "Patient deleted successfully." });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal server error." });
