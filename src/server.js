@@ -43,7 +43,7 @@ const authLimiter = rateLimit({
 // Apply the rate limiter to the /auth route
 app.use("/api/v1/auth", authLimiter, Auth);
 app.use("/api/v1/patient", validateSession, Patient);
-app.use("/api/v1/prescription", validateSession, Prescription);
+app.use("/api/v1/prescription", Prescription);
 
 // Protected route that requires a valid session
 app.get("/api/v1", validateSession, function (req, res) {

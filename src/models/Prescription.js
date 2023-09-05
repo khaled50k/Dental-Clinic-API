@@ -11,13 +11,13 @@ const prescriptionSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Patient",
       required: true,
-      populate: { select: getPatientWithoutSensitiveData },
+      // populate: { select: getPatientWithoutSensitiveData },
     },
     dentist: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Dentist",
       required: true,
-      populate: { select: getDoctorWithoutSensitiveData },
+      // populate: { select: getDoctorWithoutSensitiveData },
     },
     prescriptionDate: {
       type: Date,
