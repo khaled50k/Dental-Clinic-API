@@ -22,28 +22,36 @@ exports.createPatient = async (req, res) => {
     res.status(500).json({ error: "Internal server error." });
   }
 };
-
-// Get all patients
-exports.getAllPatients = async (req, res) => {
+// Get a specific patient by ID or a paginated list of patients
+exports.getPatientByIdOrList = async (req, res) => {
   try {
-    const patients = await Patient.find();
-    res.status(200).json(patients);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal server error." });
-  }
-};
+    const idOrPage = req.params.idOrPage ?? 1;
 
-// Get a specific patient by ID
-exports.getPatientById = async (req, res) => {
-  try {
-    const patient = await Patient.findById(req.params.id);
+    // Check if idOrPage is a number (page) or not (id)
+    if (!isNaN(idOrPage)) {
+      // It's a page number, handle pagination logic here
+      const page = parseInt(idOrPage);
 
-    if (!patient) {
-      return res.status(404).json({ error: "Patient not found." });
+      // Validate that the page is at least 1
+      if (page < 1) {
+        return res.status(400).json({ error: "Page must be at least 1." });
+      }
+
+      // Your pagination logic goes here
+      // Example: Fetch the 10 patients for the specified page
+      const patientsPerPage = 10;
+      const skip = (page - 1) * patientsPerPage;
+      const patients = await Patient.find().skip(skip).limit(patientsPerPage);
+
+      res.status(200).json(patients);
+    } else {
+      // It's an ID, handle retrieving a specific patient by ID here
+      const patient = await Patient.findById(idOrPage);
+      if (!patient) {
+        return res.status(404).json({ error: "Patient not found." });
+      }
+      res.status(200).json(patient);
     }
-
-    res.status(200).json(patient);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal server error." });

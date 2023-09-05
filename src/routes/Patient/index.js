@@ -2,8 +2,7 @@ const express = require("express");
 const router = express.Router();
 const {
   createPatient,
-  getAllPatients,
-  getPatientById,
+  getPatientByIdOrList,
   updatePatient,
   deletePatient,
 } = require("../../controllers/patientController");
@@ -15,11 +14,8 @@ const {
 // Create a new patient
 router.post("/", createPatient);
 
-// Get all patients
-router.get("/", getAllPatients);
-
-// Get a specific patient by ID
-router.get("/:id", getPatientById);
+//  Get a specific patient by ID or a paginated list of patients
+router.get("/:idOrPage?", getPatientByIdOrList);
 
 // Update a patient by ID
 router.put("/:id", updatePatient);
