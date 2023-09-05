@@ -65,7 +65,6 @@ exports.login = async (req, res) => {
         .json({ error: "Please provide all required information." });
     }
     const { error } = loginSchema.validate({ username, password });
-    console.log(username);
     if (error) {
       return res.status(400).json({ errors: error.details });
     }
