@@ -10,7 +10,8 @@ exports.createPrescription = async (req, res) => {
       return res.status(400).json({ error: error.details });
     }
 
-    const prescription = new Prescription(value).populate("patient doctor");;
+    const prescription = new Prescription(value);
+    await prescription.populate("patient doctor").execPopulate();
     await prescription.save();
 
     res
