@@ -1,4 +1,8 @@
 const mongoose = require("mongoose");
+const {
+  getPatientWithoutSensitiveData,
+  getDoctorWithoutSensitiveData,
+} = require("../utils/populate");
 
 // Define the Prescription Schema
 const prescriptionSchema = new mongoose.Schema(
@@ -7,11 +11,13 @@ const prescriptionSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Patient",
       required: true,
+      populate: { select: getPatientWithoutSensitiveData },
     },
     dentist: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Dentist",
       required: true,
+      populate: { select: getDoctorWithoutSensitiveData },
     },
     prescriptionDate: {
       type: Date,

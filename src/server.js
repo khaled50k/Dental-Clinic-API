@@ -4,7 +4,7 @@ const { xss } = require("express-xss-sanitizer");
 const bodyParser = require("body-parser");
 const session = require("express-session");
 const validateSession = require("./middleware/validateSession");
-const { Auth, Patient } = require("./routes/index");
+const { Auth, Patient,Prescription } = require("./routes/index");
 const mongoSanitize = require("express-mongo-sanitize");
 const rateLimit = require("express-rate-limit");
 const logger = require("./utils/logger"); // Import your logger
@@ -43,6 +43,7 @@ const authLimiter = rateLimit({
 // Apply the rate limiter to the /auth route
 app.use("/api/v1/auth", authLimiter, Auth);
 app.use("/api/v1/patient", validateSession, Patient);
+app.use("/api/v1/prescription", validateSession, Prescription);
 
 // Protected route that requires a valid session
 app.get("/api/v1", validateSession, function (req, res) {
