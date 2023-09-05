@@ -6,10 +6,6 @@ const {
   updatePatient,
   deletePatient,
 } = require("../../controllers/patientController");
-const {
-  createPatientSchema,
-  updatePatientSchema,
-} = require("../../validation/patientValidation");
 
 // Create a new patient
 router.post("/", createPatient);

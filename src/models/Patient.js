@@ -32,8 +32,14 @@ const patientSchema = new mongoose.Schema(
       enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
       default: null, // You can set a default value if needed
     },
-    height: Number, // New field for Height
-    weight: Number, // New field for Weight
+    height: {
+      type: Number,
+      default: null, // Default value for height
+    },
+    weight: {
+      type: Number,
+      default: null, // Default value for weight
+    },
     notes: String,
     prescriptionHistory: [
       {
@@ -44,16 +50,37 @@ const patientSchema = new mongoose.Schema(
     // Case Study Fields
     foodAllergy: String,
     heartDisease: String,
-    highBloodPressure: Boolean,
-    diabetic: Boolean,
-    surgery: Boolean,
-    accident: Boolean,
+    highBloodPressure: {
+      type: Boolean,
+      default: false, // Default value for highBloodPressure
+    },
+    diabetic: {
+      type: Boolean,
+      default: false, // Default value for diabetic
+    },
+    surgery: {
+      type: Boolean,
+      default: false, // Default value for surgery
+    },
+    accident: {
+      type: Boolean,
+      default: false, // Default value for accident
+    },
     otherConditions: String,
     familyMedicalHistory: String,
     currentMedication: String,
-    pregnancy: Boolean,
-    breastfeeding: Boolean,
-    healthInsurance: Boolean,
+    pregnancy: {
+      type: Boolean,
+      default: false, // Default value for pregnancy
+    },
+    breastfeeding: {
+      type: Boolean,
+      default: false, // Default value for breastfeeding
+    },
+    healthInsurance: {
+      type: Boolean,
+      default: false, // Default value for healthInsurance
+    },
     status: {
       type: String,
       enum: ["Active", "Inactive", "Suspended"],
