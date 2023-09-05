@@ -26,7 +26,6 @@ exports.register = async (req, res) => {
     // Check if the email address is already taken
 
     const dentistExists = await Dentist.findOne({ email });
-    console.log("--------------------------------");
     if (dentistExists) {
       return res
         .status(400)

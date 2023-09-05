@@ -1,6 +1,5 @@
 const Prescription = require("../models/Prescription");
 const Patient = require("../models/Patient");
-
 const { prescriptionSchema } = require("../validation/prescriptionValidation");
 // Create a new prescription
 exports.createPrescription = async (req, res) => {
