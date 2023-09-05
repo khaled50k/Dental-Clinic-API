@@ -7,7 +7,7 @@ const {
   deletePrescription,
   getPrescriptionsByPatientId,
   getPrescriptionsByDentistId,
-} = require("../controllers/prescriptionController");
+} = require("../../controllers/prescriptionController");
 
 // Create a new prescription
 router.post("/", createPrescription);

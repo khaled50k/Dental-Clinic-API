@@ -52,16 +52,20 @@ exports.getPrescriptions = async (req, res) => {
       const prescriptionsPerPage = 10;
       const skip = (page - 1) * prescriptionsPerPage;
       const prescriptions = await Prescription.find()
-        .populate("patient dentist")
+        .populate("patient", "name gender")
+        .populate("dentist", "name specialization")
         .skip(skip)
-        .limit(prescriptionsPerPage);
+        .limit(prescriptionsPerPage)
+        .exec();
 
       res.status(200).json(prescriptions);
     } else {
       // It's an ID, handle retrieving a specific prescription by ID here
-      const prescription = await Prescription.findById(idOrPage).populate(
-        "patient dentist"
-      );
+      const prescription = await Prescription.findById(idOrPage)
+        .populate("patient", "name gender")
+        .populate("dentist", "name specialization")
+        .exec();
+
       if (!prescription) {
         return res.status(404).json({ error: "Prescription not found." });
       }
@@ -72,7 +76,6 @@ exports.getPrescriptions = async (req, res) => {
     res.status(500).json({ error: "Internal server error." });
   }
 };
-
 
 // Get prescriptions by patient ID
 exports.getPrescriptionsByPatientId = async (req, res) => {
@@ -96,7 +99,8 @@ exports.getPrescriptionsByDentistId = async (req, res) => {
     const dentistId = req.params.dentistId;
 
     const prescriptions = await Prescription.find({ dentist: dentistId })
-      .populate("patient dentist")
+      .populate("patient", "name gender")
+      .populate("dentist", "name specialization")
       .exec();
 
     res.status(200).json(prescriptions);
