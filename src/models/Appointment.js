@@ -17,6 +17,10 @@ const appointmentSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    appointmentEnd: {
+      type: Date,
+      required: true,
+    },
     durationMinutes: {
       type: Number,
       required: true,

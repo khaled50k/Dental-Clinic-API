@@ -5,7 +5,7 @@ const { appointmentSchema } = require("../validation/appointmentValidation");
 exports.createAppointment = async (req, res) => {
   try {
     const { error, value } = appointmentSchema.validate(req.body);
-    const { durationMinutes, appointmentDateTime, dentist } = value; // Correct the typo here, it should be "value"
+    const { durationMinutes, appointmentDateTime, dentist } = value;
     if (error) {
       return res.status(400).json({ error: error.details });
     }
@@ -13,20 +13,14 @@ exports.createAppointment = async (req, res) => {
     const appointmentEnd = new Date(appointmentDateTime);
     appointmentEnd.setMinutes(appointmentEnd.getMinutes() + durationMinutes);
 
-    // Check if there's an overlapping appointment for the same dentist
+    // Check if there's an overlapping appointment for the same dentist and the same time slot
     const existingAppointment = await Appointment.findOne({
       dentist,
-      $or: [
-        {
-          appointmentDateTime: {
-            $lte: appointmentDateTime,
-            $gte: appointmentEnd,
-          },
-        },
-        {
-          appointmentEnd: { $lte: appointmentDateTime, $gte: appointmentEnd },
-        },
-      ],
+      appointmentDateTime: {
+        $lte: appointmentDateTime,
+        $gte: appointmentEnd,
+      },
+      status: "Scheduled",
     });
 
     if (existingAppointment && existingAppointment.status == "Scheduled") {
@@ -35,8 +29,10 @@ exports.createAppointment = async (req, res) => {
         .json({ error: "Appointment slot is already booked." });
     }
 
-    const appointment = new Appointment(value);
-
+    const appointment = new Appointment({
+      ...value,
+      appointmentEnd, // Include the appointmentEnd in the document
+    });
     await appointment.save();
 
     res
@@ -173,7 +169,7 @@ exports.suggestAppointments = async (req, res) => {
             dateKey + "T" + hour + ":" + (minute + 15) + ":00.000Z"
           );
 
-          const isAvailable = !dentistAppointments.some((appointment) => {
+          const isAvailable = dentistAppointments.some((appointment) => {
             // Check if the current time slot falls within any existing appointment
             return (
               appointment.status === "Scheduled" &&
@@ -280,3 +276,157 @@ exports.getAvailableHoursForDate = async (req, res) => {
     res.status(500).json({ error: "Internal server error." });
   }
 };
+
+// Controller to get all appointments for a specific date
+exports.getAppointmentsForDate = async (req, res) => {
+  try {
+    const { dentistId, appointmentDateTime } = req.params; // Assuming you pass dentistId and appointmentDateTime as parameters
+
+    // Create a JavaScript Date object for the specified date
+    const selectedDate = new Date(appointmentDateTime);
+    const hours = [];
+
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1; // Month is 0-based, so add 1
+    const day = today.getDate();
+    
+    // Create an array of Date objects for the hours you want to check
+    for (let hour = 10; hour <= 20; hour++) {
+      for (let minute = 0; minute < 60; minute += 15) {
+        const dateTime = new Date(year, month - 1, day, hour, minute); // Month is 0-based, so subtract 1
+        hours.push(dateTime);
+      }
+    }
+
+    // Get all appointments for the specified dentist on the selected date
+    const dentistAppointments = await Appointment.find({
+      dentist: dentistId,
+      appointmentDateTime: {
+        $gte: selectedDate,
+        $lt: new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000), // Add 24 hours to selectedDate
+      },
+    });
+
+    // Filter out the booked hours
+    const availableHours = [];
+
+    for (let i = 0; i < hours.length; i++) {
+      const currentHour = hours[i];
+
+      // Check if the currentHour falls within any appointment
+      const isBooked = dentistAppointments.some(appointment => {
+        const appointmentStart = appointment.appointmentDateTime;
+        const appointmentEnd = new Date(
+          appointmentStart.getTime() + appointment.durationMinutes * 60000
+        );
+
+        return (
+          currentHour.getTime() >= appointmentStart.getTime() &&
+          currentHour.getTime() < appointmentEnd.getTime()
+        );
+      });
+
+      if (!isBooked) {
+        let rangeStart = currentHour;
+        let rangeEnd = currentHour;
+
+        // Extend the range until a booked hour is encountered or the end of the array is reached
+        while (i < hours.length - 1) {
+          const nextHour = hours[i + 1];
+
+          if (!dentistAppointments.some(appointment => {
+            const appointmentStart = appointment.appointmentDateTime;
+            const appointmentEnd = new Date(
+              appointmentStart.getTime() + appointment.durationMinutes * 60000
+            );
+
+            return (
+              nextHour.getTime() > appointmentStart.getTime() &&
+              nextHour.getTime() < appointmentEnd.getTime()
+            );
+          })) {
+            rangeEnd = nextHour;
+            i++;
+          } else {
+            break;
+          }
+        }
+
+        availableHours.push({
+          from: rangeStart.toISOString(),
+          to: rangeEnd.toISOString(),
+        });
+      }
+    }
+
+    res.status(200).json(availableHours);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+/*
+
+// Controller to get all appointments for a specific date
+exports.getAppointmentsForDate = async (req, res) => {
+  try {
+    const { dentistId, appointmentDateTime } = req.params; // Assuming you pass dentistId and appointmentDateTime as parameters
+
+    // Create a JavaScript Date object for the specified date
+    const selectedDate = new Date(appointmentDateTime);
+    const hours = [];
+
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1; // Month is 0-based, so add 1
+    const day = today.getDate();
+    
+    // Create an array of Date objects for the hours you want to check
+    for (let hour = 10; hour <= 20; hour++) {
+      for (let minute = 0; minute < 60; minute += 15) {
+        const dateTime = new Date(year, month - 1, day, hour, minute); // Month is 0-based, so subtract 1
+        hours.push(dateTime);
+      }
+    }
+
+    // Get all appointments for the specified dentist on the selected date
+    const dentistAppointments = await Appointment.find({
+      dentist: dentistId,
+      appointmentDateTime: {
+        $gte: selectedDate,
+        $lt: new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000), // Add 24 hours to selectedDate
+      },
+    });
+
+    // Filter out the booked hours
+    const availableHours = [];
+
+    for (let dateTime of hours) {
+      // Check if the dateTime falls within any appointment
+      const isBooked = dentistAppointments.some(appointment => {
+        const appointmentStart = appointment.appointmentDateTime;
+        const appointmentEnd = new Date(
+          appointmentStart.getTime() + appointment.durationMinutes * 60000
+        );
+
+        return (
+          dateTime.getTime() >= appointmentStart.getTime() &&
+          dateTime.getTime() < appointmentEnd.getTime()
+        );
+      });
+
+      if (!isBooked) {
+        availableHours.push(dateTime.toISOString());
+      }
+    }
+
+    res.status(200).json(availableHours);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+*/

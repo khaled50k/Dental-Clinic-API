@@ -7,6 +7,7 @@ const {
   deleteAppointment,
   suggestAppointments,
   getAvailableHoursForDate,
+  getAppointmentsForDate
 } = require("../../controllers/appointmentController");
 
 // Create a new appointment
@@ -28,6 +29,10 @@ router.get("/dentist/:dentistId/suggest-appointments", suggestAppointments);
 router.get(
   "/dentist/:dentistId/available-hours/:appointmentDateTime",
   getAvailableHoursForDate
+);
+router.get(
+  "/dentist/:dentistId/appointment-day/:appointmentDateTime",
+  getAppointmentsForDate
 );
 
 module.exports = router;
