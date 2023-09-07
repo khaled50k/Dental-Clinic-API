@@ -1,5 +1,91 @@
 const Appointment = require("../models/Appointment");
 const { appointmentSchema } = require("../validation/appointmentValidation");
+const getAvailableHoursForDate = async (dentistId, appointmentDateTime) => {
+  try {
+    // Create a JavaScript Date object for the specified date
+    const selectedDate = new Date(appointmentDateTime);
+    const hours = [];
+
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1; // Month is 0-based, so add 1
+    const day = today.getDate();
+
+    // Create an array of Date objects for the hours you want to check
+    for (let hour = 10; hour <= 20; hour++) {
+      for (let minute = 0; minute <= 60; minute += 15) {
+        const dateTime = new Date(year, month - 1, day, hour, minute); // Month is 0-based, so subtract 1
+        hours.push(dateTime);
+      }
+    }
+
+    // Get all appointments for the specified dentist on the selected date
+    const dentistAppointments = await Appointment.find({
+      dentist: dentistId,
+      appointmentDateTime: {
+        $gte: selectedDate,
+        $lt: new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000), // Add 24 hours to selectedDate
+      },
+    });
+
+    // Filter out the booked hours
+    const availableHours = [];
+
+    for (let i = 0; i < hours.length; i++) {
+      const currentHour = hours[i];
+
+      // Check if the currentHour falls within any appointment
+      const isBooked = dentistAppointments.some(appointment => {
+        const appointmentStart = appointment.appointmentDateTime;
+        const appointmentEnd = new Date(
+          appointmentStart.getTime() + appointment.durationMinutes * 60000
+        );
+
+        return (
+          currentHour.getTime() > appointmentStart.getTime() &&
+          currentHour.getTime() < appointmentEnd.getTime()
+        );
+      });
+
+      if (!isBooked) {
+        let rangeStart = currentHour;
+        let rangeEnd = currentHour;
+
+        // Extend the range until a booked hour is encountered or the end of the array is reached
+        while (i < hours.length - 1) {
+          const nextHour = hours[i + 1];
+
+          if (!dentistAppointments.some(appointment => {
+            const appointmentStart = appointment.appointmentDateTime;
+            const appointmentEnd = new Date(
+              appointmentStart.getTime() + appointment.durationMinutes * 60000
+            );
+
+            return (
+              nextHour.getTime() >= appointmentStart.getTime() &&
+              nextHour.getTime() < appointmentEnd.getTime()
+            );
+          })) {
+            rangeEnd = nextHour;
+            i++;
+          } else {
+            break;
+          }
+        }
+
+        availableHours.push({
+          from: rangeStart.toISOString(),
+          to: rangeEnd.toISOString(),
+        });
+      }
+    }
+
+    return availableHours;
+  } catch (error) {
+    console.error(error);
+    throw new Error("Internal server error.");
+  }
+};
 
 // Create a new appointment
 exports.createAppointment = async (req, res) => {
@@ -9,6 +95,28 @@ exports.createAppointment = async (req, res) => {
     if (error) {
       return res.status(400).json({ error: error.details });
     }
+      // Call getAvailableHoursForDate function to check availability
+      const availableHours = await getAvailableHoursForDate(dentist, appointmentDateTime);
+
+      // Check if the desired appointment time is available
+      const isAppointmentAvailable = availableHours.some((timeSlot) => {
+        const slotStart =new Date(timeSlot.from);
+        const slotEnd =new Date(timeSlot.to);
+        const appointmentStart = appointmentDateTime;
+        const appointmentEnd = new Date(
+          appointmentStart.getTime() + durationMinutes * 60000
+        );
+
+        return (
+          appointmentStart.getTime() > slotStart.getTime() &&
+          appointmentEnd.getTime() < slotEnd.getTime()
+        );
+      });
+  
+      if (!isAppointmentAvailable) {
+        return res.status(400).json({ error: "Appointment slot is not available." });
+      }
+  
     // Calculate the end time based on the duration
     const appointmentEnd = new Date(appointmentDateTime);
     appointmentEnd.setMinutes(appointmentEnd.getMinutes() + durationMinutes);
@@ -292,8 +400,8 @@ exports.getAppointmentsForDate = async (req, res) => {
     const day = today.getDate();
     
     // Create an array of Date objects for the hours you want to check
-    for (let hour = 10; hour <= 20; hour++) {
-      for (let minute = 0; minute < 60; minute += 15) {
+    for (let hour = 13; hour <= 22; hour++) {
+      for (let minute = 0; minute <= 60; minute += 15) {
         const dateTime = new Date(year, month - 1, day, hour, minute); // Month is 0-based, so subtract 1
         hours.push(dateTime);
       }
