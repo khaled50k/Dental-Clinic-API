@@ -276,8 +276,6 @@ exports.updateAppointment = async (req, res) => {
   }
 };
 
-
-
 // Delete an appointment by ID
 exports.deleteAppointment = async (req, res) => {
   try {

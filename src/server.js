@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const { xss } = require("express-xss-sanitizer");
 const bodyParser = require("body-parser");
 const session = require("express-session");
 const validateSession = require("./middleware/validateSession");
@@ -12,7 +11,6 @@ const sanitizeParams = require("./validation/sanitizeParams");
 
 require("dotenv").config();
 const app = express();
-
 app.use(cors());
 app.use(bodyParser.json());
 // Middleware setup
