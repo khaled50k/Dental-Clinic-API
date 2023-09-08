@@ -1,3 +1,58 @@
+# Dental Clinic API - Technologies and Dependencies
+
+This document provides an overview of the technologies and dependencies used in the Dental Clinic API project.
+
+## Project Information
+
+- **Name**: dental-clinic-api
+- **Version**: 1.0.0
+- **Author**: Khaled Walead Abu Eriban
+- **License**: ISC
+
+## Technologies
+
+### Node.js
+
+- **Description**: Node.js is a server-side runtime environment for executing JavaScript code.
+- **Purpose**: Node.js is the foundation of the Dental Clinic API, allowing the execution of JavaScript on the server.
+
+### Express.js
+
+- **Description**: Express.js is a minimal and flexible Node.js web application framework.
+- **Purpose**: Express.js is used to create the RESTful API endpoints, handle routing, and manage middleware.
+
+### MongoDB
+
+- **Description**: MongoDB is a NoSQL database that stores data in a flexible, JSON-like format.
+- **Purpose**: MongoDB is the database used to store patient information, appointments, prescriptions, and other data.
+
+### Mongoose
+
+- **Description**: Mongoose is an ODM (Object Data Modeling) library for MongoDB and Node.js.
+- **Purpose**: Mongoose provides a schema-based solution for modeling and interacting with MongoDB data. It is used to define data schemas, perform database operations, and enforce data validation.
+
+### Winston
+
+- **Description**: Winston is a popular logging library for Node.js.
+- **Purpose**: Winston is used for logging events, errors, and information about the application's operation. It helps in debugging and monitoring.
+
+## Dependencies
+
+- **bcrypt**: Library for hashing passwords securely.
+- **body-parser**: Middleware for parsing JSON and URL-encoded data.
+- **cors**: Middleware for enabling Cross-Origin Resource Sharing.
+- **dotenv**: Library for loading environment variables from a file.
+- **express-session**: Middleware for managing user sessions.
+- **express-validator**: Library for validating and sanitizing user input.
+- **express-xss-sanitizer**: Middleware for sanitizing user input to prevent cross-site scripting (XSS) attacks.
+- **joi**: Library for data validation and schema creation.
+- **nodemon**: Utility for monitoring changes in the source code and automatically restarting the server during development.
+- **express-mongo-sanitize**: Middleware for sanitizing MongoDB queries to prevent NoSQL injection attacks.
+- **express-rate-limit**: Middleware for rate limiting requests to prevent abuse and DDoS attacks.
+
+These technologies and dependencies contribute to the development, security, and functionality of the Dental Clinic API, ensuring the smooth operation of the application.
+
+
 # Dental Clinic API
 
 Welcome to the Dental Clinic API Documentation. This documentation provides comprehensive information about the endpoints, requests, and responses for the Dental Clinic API. Use this documentation to understand how to interact with the API for managing appointments, patients, prescriptions, and authentication.
