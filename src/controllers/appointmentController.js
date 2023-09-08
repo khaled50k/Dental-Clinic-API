@@ -54,7 +54,7 @@ const getAvailableHoursForDate = async (dentistId, appointmentDateTime) => {
         return (
           currentHour >= appointmentStart &&
           currentHour < appointmentEnd &&
-          appointment.status != "Scheduled"
+          appointment.status === "Canceled"
         );
       });
 
@@ -188,7 +188,7 @@ exports.getAppointments = async (req, res) => {
   }
 };
 
-// Update an existing appointment by ID
+// Update an existing appointment by ID, checking availability if necessary
 exports.updateAppointment = async (req, res) => {
   try {
     const { error, value } = appointmentSchema.validate(req.body);
@@ -197,6 +197,28 @@ exports.updateAppointment = async (req, res) => {
 
     if (error) {
       return res.status(400).json({ error: error.details });
+    }
+
+    // Find the existing appointment by ID
+    const existingAppointment = await Appointment.findById(appointmentId);
+
+    if (!existingAppointment) {
+      return res.status(404).json({ error: "Appointment not found." });
+    }
+
+    // Check if durationMinutes or appointmentDateTime have changed
+    const isDurationOrDateTimeChanged =
+      durationMinutes !== existingAppointment.durationMinutes ||
+      appointmentDateTime.toISOString() !==
+        existingAppointment.appointmentDateTime.toISOString();
+
+    if (
+      isDurationOrDateTimeChanged &&
+      appointmentId !== existingAppointment._id.toString()
+    ) {
+      return res.status(400).json({
+        error: "Changing appointment date and time is not allowed.",
+      });
     }
 
     // Call getAvailableHoursForDate function to check availability
@@ -214,6 +236,16 @@ exports.updateAppointment = async (req, res) => {
         appointmentStart.getTime() + durationMinutes * 60000
       );
 
+      // Skip availability check for the same appointment
+      if (
+        appointmentId === existingAppointment._id.toString() &&
+        appointmentStart.getTime() ===
+          existingAppointment.appointmentDateTime.getTime() &&
+        durationMinutes === existingAppointment.durationMinutes
+      ) {
+        return true;
+      }
+
       return (
         appointmentStart.getTime() >= slotStart.getTime() &&
         appointmentEnd.getTime() <= slotEnd.getTime()
@@ -226,23 +258,13 @@ exports.updateAppointment = async (req, res) => {
         .json({ error: "Appointment slot is not available." });
     }
 
-    // Calculate the end time based on the duration
-    const appointmentEnd = new Date(appointmentDateTime);
-    appointmentEnd.setMinutes(appointmentEnd.getMinutes() + durationMinutes);
+    // Update the appointment data
+    existingAppointment.set({
+      ...value,
+    });
 
-    // Find and update the appointment by ID
-    const updatedAppointment = await Appointment.findByIdAndUpdate(
-      appointmentId,
-      {
-        ...value,
-        appointmentEnd, // Include the appointmentEnd in the update
-      },
-      { new: true } // To return the updated document
-    );
-
-    if (!updatedAppointment) {
-      return res.status(404).json({ error: "Appointment not found." });
-    }
+    // Save the updated appointment to the database
+    const updatedAppointment = await existingAppointment.save();
 
     res.json({
       message: "Appointment updated successfully.",
@@ -253,6 +275,8 @@ exports.updateAppointment = async (req, res) => {
     res.status(500).json({ error: "Internal server error." });
   }
 };
+
+
 
 // Delete an appointment by ID
 exports.deleteAppointment = async (req, res) => {
@@ -275,151 +299,8 @@ exports.deleteAppointment = async (req, res) => {
   }
 };
 
-// Additional controller for appointment suggestions
-exports.suggestAppointments = async (req, res) => {
-  try {
-    const { dentistId } = req.params; // Assuming you pass the dentistId as a parameter
-
-    // Get all appointments for the specified dentist
-    const dentistAppointments = await Appointment.find({ dentist: dentistId });
-
-    // Define a range of time for which you want to suggest appointments
-    // For example, suggesting appointments for the next 7 days
-    const currentDate = new Date();
-    const endDate = new Date();
-    endDate.setDate(currentDate.getDate() + 7);
-
-    // Create an object to store available dates and hours
-    const availableDatesAndHours = {};
-
-    // Iterate over the date range and check availability
-    let currentDateIter = new Date(currentDate);
-    while (currentDateIter <= endDate) {
-      const dateKey = currentDateIter.toISOString().split("T")[0]; // Format date as YYYY-MM-DD
-
-      // Initialize available hours for this date
-      const availableHours = [];
-
-      // Iterate over hours and 15-minute intervals (e.g., from 9:00 AM to 5:00 PM)
-      for (let hour = 9; hour <= 20; hour++) {
-        for (let minute = 0; minute < 60; minute += 15) {
-          const appointmentStart = new Date(
-            dateKey + "T" + hour + ":" + minute + ":00.000Z"
-          );
-          const appointmentEnd = new Date(
-            dateKey + "T" + hour + ":" + (minute + 15) + ":00.000Z"
-          );
-
-          const isAvailable = dentistAppointments.some((appointment) => {
-            // Check if the current time slot falls within any existing appointment
-            return (
-              appointment.status === "Scheduled" &&
-              appointmentStart >= appointment.appointmentDateTime &&
-              appointmentStart <
-                new Date(
-                  appointment.appointmentDateTime.getTime() +
-                    appointment.durationMinutes * 60000
-                ) &&
-              appointmentEnd > appointment.appointmentDateTime &&
-              appointmentEnd <=
-                new Date(
-                  appointment.appointmentDateTime.getTime() +
-                    appointment.durationMinutes * 60000
-                )
-            );
-          });
-
-          if (isAvailable) {
-            availableHours.push(hour + ":" + (minute < 10 ? "0" : "") + minute);
-          }
-        }
-      }
-
-      if (availableHours.length > 0) {
-        availableDatesAndHours[dateKey] = availableHours;
-      }
-
-      // Move to the next day
-      currentDateIter.setDate(currentDateIter.getDate() + 1);
-    }
-
-    res.status(200).json(availableDatesAndHours);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal server error." });
-  }
-};
-
-// Controller to get available hours for a specific date
-exports.getAvailableHoursForDate = async (req, res) => {
-  try {
-    const { dentistId, appointmentDateTime } = req.params; // Assuming you pass dentistId, year, month, and day as parameters
-
-    // Create a JavaScript Date object for the specified date
-    const selectedDate = new Date(appointmentDateTime);
-
-    // Get all appointments for the specified dentist on the selected date
-    const dentistAppointments = await Appointment.find({
-      dentist: dentistId,
-      appointmentDateTime: {
-        $gte: selectedDate,
-        $lt: new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000), // Add 24 hours to selectedDate
-      },
-    });
-
-    // Define available hours (e.g., from 9:00 AM to 4:00 PM)
-    const availableHours = {};
-    let currentDateIter = new Date(selectedDate);
-    const dateKey = currentDateIter.toISOString().split("T")[0]; // Format date as YYYY-MM-DD
-
-    // Iterate over hours and 15-minute intervals (e.g., from 9:00 AM to 5:00 PM)
-    for (let hour = 9; hour <= 20; hour++) {
-      for (let minute = 0; minute < 60; minute += 15) {
-        const appointmentStart = new Date(
-          dateKey + "T" + hour + ":" + minute + ":00.000Z"
-        );
-        const appointmentEnd = new Date(
-          dateKey + "T" + hour + ":" + (minute + 15) + ":00.000Z"
-        );
-
-        const isAvailable = !dentistAppointments.some((appointment) => {
-          // Check if the current time slot falls within any existing appointment
-          return (
-            appointment.status === "Scheduled" &&
-            appointmentStart >= appointment.appointmentDateTime &&
-            appointmentStart <
-              new Date(
-                appointment.appointmentDateTime.getTime() +
-                  appointment.durationMinutes * 60000
-              ) &&
-            appointmentEnd > appointment.appointmentDateTime &&
-            appointmentEnd <=
-              new Date(
-                appointment.appointmentDateTime.getTime() +
-                  appointment.durationMinutes * 60000
-              )
-          );
-        });
-
-        if (isAvailable) {
-          const timeString = hour + ":" + (minute < 10 ? "0" : "") + minute;
-          if (!availableHours[selectedDate.toISOString()]) {
-            availableHours[selectedDate.toISOString()] = [];
-          }
-          availableHours[selectedDate.toISOString()].push(timeString);
-        }
-      }
-    }
-
-    res.status(200).json(availableHours);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal server error." });
-  }
-};
-
 // Controller to get all appointments for a specific date
-exports.getAppointmentsForDate = async (req, res) => {
+exports.suggestAppointments = async (req, res) => {
   try {
     const { dentistId, appointmentDateTime } = req.params; // Assuming you pass dentistId and appointmentDateTime as parameters
 

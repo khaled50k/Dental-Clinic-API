@@ -17,10 +17,6 @@ const appointmentSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-    appointmentEnd: {
-      type: Date,
-      required: true,
-    },
     durationMinutes: {
       type: Number,
       required: true,
@@ -47,5 +43,17 @@ appointmentSchema.index(
   { unique: true }
 );
 
+// Define a virtual for appointmentEnd
+appointmentSchema.virtual("appointmentEnd").get(function () {
+  return new Date(
+    this.appointmentDateTime.getTime() + this.durationMinutes * 60000
+  );
+});
+
+// Apply the virtual to your schema
+appointmentSchema.set("toObject", { virtuals: true });
+appointmentSchema.set("toJSON", { virtuals: true });
+
 const Appointment = mongoose.model("Appointment", appointmentSchema);
+
 module.exports = Appointment;
