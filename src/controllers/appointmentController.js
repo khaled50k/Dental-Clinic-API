@@ -167,7 +167,7 @@ exports.getAppointments = async (req, res) => {
       const appointmentsPerPage = 10;
       const skip = (page - 1) * appointmentsPerPage;
       const appointments = await Appointment.find()
-        .populate("patient dentist")
+        // .populate("patient dentist")
         .skip(skip)
         .limit(appointmentsPerPage);
 
@@ -188,28 +188,65 @@ exports.getAppointments = async (req, res) => {
   }
 };
 
-// Update an appointment by ID
+// Update an existing appointment by ID
 exports.updateAppointment = async (req, res) => {
   try {
     const { error, value } = appointmentSchema.validate(req.body);
+    const { durationMinutes, appointmentDateTime, dentist } = value;
+    const appointmentId = req.params.id; // Assuming the appointment ID is passed in the URL
 
     if (error) {
       return res.status(400).json({ error: error.details });
     }
 
+    // Call getAvailableHoursForDate function to check availability
+    const availableHours = await getAvailableHoursForDate(
+      dentist,
+      appointmentDateTime
+    );
+
+    // Check if the desired appointment time is available
+    const isAppointmentAvailable = availableHours.some((timeSlot) => {
+      const slotStart = new Date(timeSlot.from);
+      const slotEnd = new Date(timeSlot.to);
+      const appointmentStart = appointmentDateTime;
+      const appointmentEnd = new Date(
+        appointmentStart.getTime() + durationMinutes * 60000
+      );
+
+      return (
+        appointmentStart.getTime() >= slotStart.getTime() &&
+        appointmentEnd.getTime() <= slotEnd.getTime()
+      );
+    });
+
+    if (!isAppointmentAvailable) {
+      return res
+        .status(400)
+        .json({ error: "Appointment slot is not available." });
+    }
+
+    // Calculate the end time based on the duration
+    const appointmentEnd = new Date(appointmentDateTime);
+    appointmentEnd.setMinutes(appointmentEnd.getMinutes() + durationMinutes);
+
+    // Find and update the appointment by ID
     const updatedAppointment = await Appointment.findByIdAndUpdate(
-      req.params.id,
-      value,
-      { new: true }
+      appointmentId,
+      {
+        ...value,
+        appointmentEnd, // Include the appointmentEnd in the update
+      },
+      { new: true } // To return the updated document
     );
 
     if (!updatedAppointment) {
       return res.status(404).json({ error: "Appointment not found." });
     }
 
-    res.status(200).json({
+    res.json({
       message: "Appointment updated successfully.",
-      updatedAppointment,
+      appointment: updatedAppointment,
     });
   } catch (error) {
     console.error(error);
